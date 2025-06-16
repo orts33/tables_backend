@@ -1,0 +1,42 @@
+services:
+  db:
+    image: mariadb:latest
+    container_name: mariadb_tables
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=${MARIADB_DATABASE}
+      - MARIADB_USER=${MARIADB_USER}
+      - MARIADB_PASSWORD=${MARIADB_PASSWORD}
+    volumes:
+      - mariadb_tables_data:/var/lib/mysql  # Уникальное имя для этого проекта
+    ports:
+      - "3306:3306"
+    networks:
+      - db_tables
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin_tables
+    restart: unless-stopped
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      - PMA_HOST=${PMA_HOST}
+      - PMA_PORT=${PMA_PORT}
+      - MYSQL_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD}
+    ports:
+      - "8080:80"
+    networks:
+      - db_tables
+
+volumes:
+  mariadb_tables_data:  # Уникальное имя volume для этого проекта
+
+networks:
+  db_tables:
+    driver: bridge
