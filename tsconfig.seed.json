@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2021",
+    "outDir": "dist/seed",
+    "types": ["node"],
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  },
+  "include": ["prisma/seed.ts"]
+}
