@@ -136,23 +136,15 @@ export class UserService {
     }
 
     async getUser(telegramId: string): Promise<any> {
+        console.log(telegramId)
         const user = await this.prisma.user.findUnique({
             where: { telegramId },
-            include: {
-                clan: {
-                    include: {
-                        creator: { select: { username: true } },
-                        members: { select: { id: true } },
-                    },
-                },
-            },
         });
         if (!user) {
             throw new NotFoundException('Пользователь не найден');
         }
         return {
             ...this.mapToUserResponseDto(user),
-            clan: user.clan,
         };
     }
 
@@ -229,7 +221,7 @@ export class UserService {
         try {
             const users = await this.prisma.user.findMany({
                 orderBy: { xp: 'desc' },
-                take: limit,
+                take: limit ? limit : 10,
             });
 
             return users.map((user) => this.mapToUserResponseDto(user));
@@ -269,5 +261,11 @@ export class UserService {
         }
 
         return user.balance.toNumber(); // если `balance` — это Decimal
+    }
+
+    async findByTelegramId(telegramId: string) {
+        return this.prisma.user.findUnique({
+            where: { telegramId },
+        });
     }
 }

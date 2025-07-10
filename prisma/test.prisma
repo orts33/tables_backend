@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./test.db"
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  telegramId   String        @unique
+  username     String?
+  firstName    String?
+  lastName     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tableUsers   TableUser[]
+  photoUrl     String?
+  wonTables    Int           @default(0)
+  totalGames   Int           @default(0)
+  clan         Clan?         @relation("ClanMembers", fields: [clanId], references: [id])
+  createdClan  Clan?         @relation("ClanCreator")
+  clanId       Int?
+  tablePrizes  TablePrize[]
+  level        Int           @default(1)
+  xp           Float         @default(0)
+  balance      Decimal       @default(0.0)
+  levelRewards LevelReward[]
+  Invoice      Invoice[]
+  referrals    Referral[]    @relation("Referrer")
+  referred     Referral[]    @relation("Referred")
+
+  @@index([balance, wonTables])
+}
+
+model Referral {
+  id         Int      @id @default(autoincrement())
+  referrerId Int
+  referredId Int
+  createdAt  DateTime @default(now())
+  referrer   User     @relation("Referrer", fields: [referrerId], references: [id])
+  referred   User     @relation("Referred", fields: [referredId], references: [id])
+
+  @@unique([referrerId, referredId])
+}
+
+model Invoice {
+  id        String    @id
+  userId    Int
+  amount    Float
+  currency  String
+  status    String
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LevelReward {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  level      Int
+  rewardType String // Previously RewardType enum
+  amount     Float?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Table {
+  id          Int          @id @default(autoincrement())
+  type        String       @default("LINEAR") // Previously TableType enum
+  entryFee    Decimal
+  prizeFund   Int
+  status      String       @default("OPEN") // Previously TableStatus enum
+  inviteLink  String       @unique
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tableUsers  TableUser[]
+  tablePrizes TablePrize[]
+}
+
+model TableUser {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  table      Table    @relation(fields: [tableId], references: [id])
+  tableId    Int
+  joinedAt   DateTime @default(now())
+  isFirstBet Boolean  @default(false)
+}
+
+model TablePrize {
+  id        Int      @id @default(autoincrement())
+  tableId   Int
+  userId    Int
+  position  Int
+  amount    Int
+  table     Table    @relation(fields: [tableId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Clan {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  creatorId Int      @unique
+  creator   User     @relation("ClanCreator", fields: [creatorId], references: [id])
+  members   User[]   @relation("ClanMembers")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -68,8 +68,27 @@ export class TableService {
 
     async getTables(): Promise<TableResponseDto[]> {
         const tables = await this.prisma.table.findMany({
+            where: {
+              status: 'OPEN',
+            },
             include: {
-                tableUsers: { include: { user: true } },
+                tableUsers: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                                // username: true,
+                                photoUrl: true,
+                                level: true,
+                                totalGames: true,
+                                wonTables: true,
+                                // telegramId НЕ включаем
+                            },
+                        },
+                    }
+                },
                 tablePrizes: true,
             },
         });
@@ -144,13 +163,11 @@ export class TableService {
     async joinTable(data: JoinTableDto): Promise<TableResponseDto> {
         const { tableId, telegramId } = data;
 
-        // Проверка пользователя через UserService
         const user = await this.userService.getUser(telegramId);
         if (!user) {
             throw new BadRequestException('Пользователь не найден');
         }
 
-        // Проверка стола
         const table = await this.prisma.table.findUnique({
             where: { id: tableId },
             include: { tableUsers: true },
@@ -160,20 +177,24 @@ export class TableService {
         }
 
         const maxPlayers = table.type === TableType.LINEAR ? this.LINEAR_MAX_PLAYERS : this.RANDOM_MAX_PLAYERS;
-        if (table.tableUsers.length >= maxPlayers) {
-            throw new BadRequestException('Стол полон');
+
+        console.log(maxPlayers, 'ВОВВО')
+        console.log(table.tableUsers.length)
+        console.log(this.RANDOM_MAX_PLAYERS)
+        console.log(this.LINEAR_MAX_PLAYERS)
+
+        if (table.tableUsers.length > maxPlayers) {
+            throw new BadRequestException('Стол уже заполнен');
         }
 
         if (table.tableUsers.some((tu) => tu.userId === user.id)) {
             throw new BadRequestException('Пользователь уже присоединился к этому столу');
         }
 
-        // Проверка баланса
         if (new Decimal(user.balance).lt(new Decimal(table.entryFee))) {
             throw new BadRequestException('Недостаточно средств на балансе');
         }
 
-        // Транзакция: списание баланса, добавление в tableUsers, установка isFirstBet
         const updatedTable = await this.prisma.$transaction(async (tx) => {
             await tx.user.update({
                 where: { id: user.id },
@@ -183,7 +204,12 @@ export class TableService {
             const tableUpdate = await tx.table.update({
                 where: { id: tableId },
                 data: {
-                    tableUsers: { create: { userId: user.id, isFirstBet: await this.isFirstBet(user.id) } },
+                    tableUsers: {
+                        create: {
+                            userId: user.id,
+                            isFirstBet: await this.isFirstBet(user.id),
+                        },
+                    },
                     prizeFund: { increment: table.entryFee.toNumber() },
                 },
                 include: {
@@ -195,17 +221,18 @@ export class TableService {
             return tableUpdate;
         });
 
-        if (updatedTable.tableUsers.length >= maxPlayers - 2) {
+        const currentPlayers = updatedTable.tableUsers.length;
+        const isLastLinearPlayer = table.type === TableType.LINEAR && currentPlayers === this.LINEAR_MAX_PLAYERS;
+        const isLastRandomPlayer = table.type === TableType.RANDOM && currentPlayers === this.RANDOM_MAX_PLAYERS;
+
+        if (currentPlayers >= maxPlayers - 2) {
             await this.notifyTableAlmostFull(updatedTable.id);
         }
 
-        // Логика столов
-        if (updatedTable.tableUsers.length === maxPlayers) {
-            if (table.type === TableType.LINEAR) {
-                await this.splitAndFinishLinearTable(tableId);
-            } else {
-                await this.finishRandomTable(tableId);
-            }
+        if (isLastLinearPlayer) {
+            await this.splitAndFinishLinearTable(tableId);
+        } else if (isLastRandomPlayer) {
+            await this.finishRandomTable(tableId);
         }
 
         return this.mapToTableResponseDto(updatedTable);
@@ -506,7 +533,7 @@ export class TableService {
                         first_name: tu.user.firstName,
                         last_name: tu.user.lastName,
                         photo_url: tu.user.photoUrl,
-                        balance: tu.user.balance.toNumber(),
+                        // balance: tu.user.balance.toNumber(),
                         wonTables: tu.user.wonTables,
                         totalGames: tu.user.totalGames,
                         level: tu.user.level,
@@ -527,7 +554,7 @@ export class TableService {
                         first_name: tp.user.firstName,
                         last_name: tp.user.lastName,
                         photo_url: tp.user.photoUrl,
-                        balance: tp.user.balance.toNumber(),
+                        // balance: tp.user.balance.toNumber(),
                         wonTables: tp.user.wonTables,
                         totalGames: tp.user.totalGames,
                         level: tp.user.level,
@@ -540,4 +567,31 @@ export class TableService {
             })),
         };
     }
+
+    async initTables(): Promise<void> {
+        const variants: TableType[] = ['LINEAR', 'RANDOM'];
+        const bets: number[] = [3, 5, 10];
+
+        const tables = await this.prisma.table.findMany({
+            where: { status: TableStatus.OPEN },
+        });
+
+        if (!tables.length) {
+            try {
+                for (const type of variants) {
+                    for (const bet of bets) {
+                        await this.create({
+                            type,
+                            entryFee: bet,
+                            status: 'OPEN',
+                            created_at: new Date(),
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('Ошибка при создании стартовых столов:', e);
+            }
+        }
+    }
+
 }

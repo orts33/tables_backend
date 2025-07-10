@@ -128,20 +128,20 @@ async function main() {
     }
 
     // 7) Создаём инвойсы
-    for (let i = 0; i < TOTAL_INVOICES; i++) {
-        const user = users[Math.floor(Math.random() * TOTAL_USERS)];
-        await prisma.invoice.create({
-            data: {
-                id: `mock_invoice_${i + 1}`,
-                userId: user.id,
-                amount: Math.floor(Math.random() * 500) + 50, // Сумма 50–550
-                currency: ['USDT', 'BTC', 'ETH'][Math.floor(Math.random() * 3)],
-                status: ['pending', 'paid', 'failed'][Math.floor(Math.random() * 3)],
-                createdAt: new Date(),
-                paidAt: Math.random() > 0.5 ? new Date() : null, // 50% шанс оплаты
-            },
-        });
-    }
+    // for (let i = 0; i < TOTAL_INVOICES; i++) {
+    //     const user = users[Math.floor(Math.random() * TOTAL_USERS)];
+    //     await prisma.invoice.create({
+    //         data: {
+    //             id: `mock_invoice_${i + 1}`,
+    //             userId: user.id,
+    //             amount: Math.floor(Math.random() * 500) + 50, // Сумма 50–550
+    //             currency: ['USDT', 'BTC', 'ETH'][Math.floor(Math.random() * 3)],
+    //             status: ['pending', 'paid', 'failed'][Math.floor(Math.random() * 3)],
+    //             createdAt: new Date(),
+    //             paidAt: Math.random() > 0.5 ? new Date() : null, // 50% шанс оплаты
+    //         },
+    //     });
+    // }
 
     // 8) Создаём награды за уровни
     const rewardTypes = [

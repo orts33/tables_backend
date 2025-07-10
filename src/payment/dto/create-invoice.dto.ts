@@ -11,7 +11,16 @@ export class CreateInvoiceDto {
     description: string;
 
     @IsString()
+    telegramId?: string;
+
+    @IsString()
     userId?: number;
+
+    @IsString()
+    link?: string;
+
+    @IsNumber()
+    paymentId?: number;
 
     @IsOptional()
     @IsString()

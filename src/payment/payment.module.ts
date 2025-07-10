@@ -7,6 +7,7 @@ import axios from 'axios';
 import axiosRetry from 'axios-retry';
 import { PrismaModule } from '../prisma/prisma.module';
 import {UserModule} from "../user/user.module";
+import {BotModule} from "../bot/bot.module";
 
 @Module({
     imports: [ConfigModule, PrismaModule, UserModule],

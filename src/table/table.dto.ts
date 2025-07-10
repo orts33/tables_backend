@@ -63,6 +63,14 @@ export class CreateTableDto {
     @ApiProperty({ enum: TableType, example: TableType.LINEAR, description: 'Тип стола' })
     @IsEnum(TableType)
     type: TableType;
+
+
+    @IsEnum(TableStatus)
+    @IsOptional() // если хочешь, чтобы было необязательно
+    status?: TableStatus;
+
+    created_at?: Date;
+
 }
 
 export class JoinTableDto {

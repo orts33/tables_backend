@@ -8,5 +8,6 @@ import {UserModule} from "../user/user.module";
     imports: [PrismaModule, UserModule],
     controllers: [TableController],
     providers: [TableService],
+    exports: [TableService],
 })
 export class TableModule {}

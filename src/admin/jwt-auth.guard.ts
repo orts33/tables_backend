@@ -5,6 +5,7 @@ import * as jwt from 'jsonwebtoken';
 export class JwtAuthGuard implements CanActivate {
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
+
         const token = request.headers.authorization?.replace('Bearer ', '');
 
         if (!token) {

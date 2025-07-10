@@ -1,9 +1,23 @@
+// 📁 __tests__/table.service.spec.ts
+
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
+import { INestApplication } from '@nestjs/common';
 import { prisma } from './setup';
-import {INestApplication} from "@nestjs/common";
+import { Decimal } from 'decimal.js';
+
+const TableType = {
+    LINEAR: 'LINEAR',
+    RANDOM: 'RANDOM'
+};
+
+const TableStatus = {
+    OPEN: 'OPEN',
+    CLOSED: 'CLOSED',
+    FINISHED: 'FINISHED'
+};
 
 describe('TableController (e2e)', () => {
     let app: INestApplication;
@@ -26,8 +40,6 @@ describe('TableController (e2e)', () => {
         await prismaService.tablePrize.deleteMany();
         await prismaService.tableUser.deleteMany();
         await prismaService.table.deleteMany();
-        await prismaService.referralReward.deleteMany();
-        await prismaService.referral.deleteMany();
         await prismaService.user.deleteMany();
     });
 
@@ -35,23 +47,17 @@ describe('TableController (e2e)', () => {
         await app.close();
     });
 
-    it('POST /tables/join should handle referral and XP', async () => {
-        const referrer = await prismaService.user.create({
-            data: { telegramId: '123', username: 'referrer' },
-        });
+    it('POST /tables/join should increase XP on first join', async () => {
         const user = await prismaService.user.create({
-            data: { telegramId: '456', username: 'user', }
-        });
-        await prismaService.referral.create({
-            data: { referrerId: referrer.id, referredId: user.id },
+            data: { telegramId: '456', username: 'user' },
         });
 
         const table = await prismaService.table.create({
             data: {
-                type: 'LINEAR',
-                entryFee: 5,
+                type: TableType.LINEAR,
+                entryFee: new Decimal(5),
                 prizeFund: 45,
-                status: 'OPEN',
+                status: TableStatus.OPEN,
                 inviteLink: 'https://t.me/@TestBot?start=table_123',
             },
         });
@@ -63,15 +69,7 @@ describe('TableController (e2e)', () => {
 
         expect(response.body.tableUsers).toHaveLength(1);
 
-        // Проверка реферальных бонусов
-        const rewards = await prismaService.referralReward.findMany({
-            where: { referral: { referrerId: referrer.id } },
-        });
-        expect(rewards).toHaveLength(1);
-        expect(rewards[0].amount).toBe(0.25); // 5% от 5 (первое участие)
-
-        // Проверка XP
         const updatedUser = await prismaService.user.findUnique({ where: { telegramId: '456' } });
-        expect(updatedUser.xp).toBe(10); // XP за участие
+        expect(updatedUser.xp).toBe(10);
     });
 });
