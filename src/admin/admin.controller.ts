@@ -16,10 +16,9 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { Prisma } from '@prisma/client';
 import {ConfigService} from "@nestjs/config";
 import { InjectBot } from 'nestjs-telegraf';
-import {Telegraf} from "telegraf";
 
-@Controller('api/admin')
 @UseGuards(JwtAuthGuard)
+@Controller('api/admin')
 export class AdminController {
     private readonly logger = new Logger(AdminController.name);
 
@@ -362,3 +361,5 @@ export class AdminController {
     }
 
 }
+
+import {Telegraf} from "telegraf";

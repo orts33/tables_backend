@@ -34,6 +34,7 @@ async function bootstrap() {
       .setVersion('1.0')
       .addTag('tables', 'Операции со столами')
       .addTag('participants', 'Операции с участниками')
+      .addBearerAuth() // ✅ Добавить поддержку токена
       .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -41,6 +42,7 @@ async function bootstrap() {
     swaggerOptions: {
       defaultModelsExpandDepth: 2,
       defaultModelExpandDepth: 2,
+      persistAuthorization: true, // ✅ Сохраняет токен при обновлении страницы
     },
   });
 
