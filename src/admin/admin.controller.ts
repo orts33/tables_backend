@@ -17,6 +17,9 @@ import { Prisma } from '@prisma/client';
 import {ConfigService} from "@nestjs/config";
 import { InjectBot } from 'nestjs-telegraf';
 
+
+@ApiBearerAuth() // ✅ Показывает в Swagger, что нужен токен
+@ApiTags('Admin')
 @UseGuards(JwtAuthGuard)
 @Controller('api/admin')
 export class AdminController {
@@ -363,3 +366,4 @@ export class AdminController {
 }
 
 import {Telegraf} from "telegraf";
+import {ApiBearerAuth, ApiTags} from "@nestjs/swagger";
